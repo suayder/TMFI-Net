@@ -16,7 +16,7 @@ def kldiv(s_map, gt):
     w = s_map.size(1)
     h = s_map.size(2)
 
-    eps = 2.2204e-16
+    eps = 2.2204e-8
 
     sum_s_map = torch.sum(s_map.view(batch_size, -1), 1)
     expand_s_map = sum_s_map.view(batch_size, 1, 1).expand(batch_size, w, h)
@@ -28,8 +28,8 @@ def kldiv(s_map, gt):
     
     assert expand_gt.size() == gt.size()
 
-    s_map = s_map/((expand_s_map+eps)*1.0)
-    gt = gt / ((expand_gt+eps)*1.0)
+    s_map = s_map/(expand_s_map+eps)
+    gt = gt / (expand_gt+eps)
 
     s_map = s_map.view(batch_size, -1)
     gt = gt.view(batch_size, -1)
@@ -38,6 +38,7 @@ def kldiv(s_map, gt):
     result = gt * torch.log(eps + gt/(s_map + eps))
     # print('losses', torch.log(eps + gt/(s_map + eps)))
     # print('loss', gt * torch.log(eps + gt/(s_map + eps)))
+    # print('kldiv', torch.mean(torch.sum(result, 1)), f'is nan {torch.isnan(s_map).any()}')
     return torch.mean(torch.sum(result, 1))
 
 
@@ -51,7 +52,7 @@ def normalize_map(s_map):
     min_s_map = torch.min(s_map.view(batch_size, -1), 1)[0].view(batch_size, 1, 1).expand(batch_size, w, h)
     max_s_map = torch.max(s_map.view(batch_size, -1), 1)[0].view(batch_size, 1, 1).expand(batch_size, w, h)
 
-    norm_s_map = (s_map - min_s_map)/((max_s_map-min_s_map*1.0)+eps)
+    norm_s_map = (s_map - min_s_map)/(max_s_map-min_s_map+eps)
     return norm_s_map
 
 def similarity(s_map, gt):
@@ -84,7 +85,7 @@ def similarity(s_map, gt):
     return torch.mean(torch.sum(torch.min(s_map, gt), 1))
 
 def cc(s_map, gt):
-    eps = 2.2204e-16
+    eps = 2.2204e-8
 
     assert s_map.size() == gt.size()
     batch_size = s_map.size(0)
@@ -104,7 +105,7 @@ def cc(s_map, gt):
     aa = torch.sum((s_map * s_map).view(batch_size, -1), 1)
     bb = torch.sum((gt * gt).view(batch_size, -1), 1)
 
-    return torch.mean(ab / (torch.sqrt(aa*bb)+eps))
+    return torch.mean(ab / torch.sqrt(torch.clamp(aa*bb, min=eps)))
 
 def nss(s_map, gt):
     if s_map.size() != gt.size():

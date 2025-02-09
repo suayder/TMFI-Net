@@ -17,13 +17,12 @@ def get_loss(pred_map, gt, args):
         loss += args.l1_coeff * criterion(pred_map, gt)
     if args.sim:
         loss += args.sim_coeff * similarity(pred_map, gt)
-
+    
     return loss
 
 
 def loss_func(pred_map, gt, args):
     loss = torch.FloatTensor([0.0]).cuda()
-    criterion = nn.L1Loss()
     assert pred_map.size() == gt.size()
 
     if len(pred_map.size()) == 4:
@@ -37,7 +36,7 @@ def loss_func(pred_map, gt, args):
 
         loss /= pred_map.size(0)
         return loss
-
+    # print(f'loss_func {get_loss(pred_map, gt, args)} pred_map.size {pred_map.size(0)}')
     return get_loss(pred_map, gt, args)
 
 
